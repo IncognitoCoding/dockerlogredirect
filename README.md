@@ -37,16 +37,16 @@ The sample YAML configuration file has plenty of notes to help explain the setup
                     - Set trigger time. Maybe daily around midnight
                     - Set action to start program
                     - Program/Script: python
-                    - Arguments: "C:\<path to the program>\docker_log_redirect\docker_log_redirect.py"
+                    - Arguments: "C:\<path to the program>\dockerlogredirect\dockerlogredirect\dockerlogredirect.py"
        Step 4.2 (Optional - Linux Ubuntu): Set up a service to run the program.
             Step 4.2.1:  Create a new service file.
                 Run: cd /lib/systemd/system
-                Run: sudo nano docker_log_redirect.service
+                Run: sudo nano dockerlogredirect.service
                     Note1: The service account needs to have docker socket access. The root user is added below as an example.
                     Note2: You should set up a delayed startup, giving the docker containers time to start. Your "TimeoutStartSec" must be greater than the "ExecStartPre".
-                    Note3: If you are using the program software_log_monitor, you should have this program startup before.
+                    Note3: If you are using the program logspotlight, you should have this program startup before.
                     Paste:
-                        Description=docker_log_redirect
+                        Description=dockerlogredirect
                         After=multi-user.target
                         After=network.target
 
@@ -55,8 +55,8 @@ The sample YAML configuration file has plenty of notes to help explain the setup
                         User=root
                         TimeoutStartSec=240
                         ExecStartPre=/bin/sleep 60
-                        WorkingDirectory=/<path to program>/docker_log_redirect
-                        ExecStart=/usr/bin/python3  /<path to program>/docker_log_redirect/docker_log_redirect.py                                                         
+                        WorkingDirectory=/<path to program>/dockerlogredirect/dockerlogredirect
+                        ExecStart=/usr/bin/python3  /<path to program>/dockerlogredirect/dockerlogredirect/dockerlogredirect.py                                                         
                         Restart=no
 
                         [Install]
