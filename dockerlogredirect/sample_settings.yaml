@@ -1,0 +1,83 @@
+general:
+  # True or False
+  email_alerts: True
+  # Sends email alerts with program crashes
+  # True: enabled, False: disabled
+  alert_program_errors: True
+  # Path to save all program and docker container logs.
+  central_log_path: '<your full log path>'
+
+docker_container:
+  docker_container1:
+    # Add the software container_name
+    container_name: 'MySoftware1'
+    log_name: 'sample1.log'
+    # (Optional): Exclude line with keywords. List format for multiple entries.
+    exclude: 'sample entry'
+  docker_container2:
+    # Add the software container_name
+    container_name: 'MySoftware2'
+    log_name: 'sample2.log'
+    # (Optional): Exclude line with keywords. List format for multiple entries.
+    exclude:
+      - 'sample entry1'
+      - 'sample entry2'
+  # Add any additional software entries below and increase the number by 1
+  # Requires: container_name, log_name, and info_search
+
+email:
+  smtp: smtp.yourdomain.com
+  # True or False
+  authentication_required: False
+  username: SMTP_username
+  # Leave blank if not required
+  password: SMTP_password
+  #True: Use TLS on port 587, False: Standard port 25
+  use_tls: False
+  from_email: alerts@monitoring.me
+  to_email: youremail@monitoring.me
+
+# #############################################################################################
+# ############################DockerLogRedirect Logging Settings Below#########################
+# #############################################################################################
+version: 1
+disable_existing_loggers: False
+formatters:
+  simple:
+    format: "%(asctime)s|%(levelname)s|%(message)s (Module:%(module)s, Function:%(funcName)s, Line:%(lineno)s)"
+    datefmt: "%Y-%m-%d %H:%M:%S"
+
+handlers:
+  console:
+    class: logging.StreamHandler
+    level: INFO
+    formatter: simple
+    stream: ext://sys.stdout
+  dockerlogredirect_log_file:
+    class: logging.handlers.RotatingFileHandler
+    level: DEBUG
+    formatter: simple
+    # Default log paths are possible by typing DEFAULT in all caps. DEFAULT will use the main program name as the log file name. Add :<log name> to the end of DEFAULT to define a log name. Manual paths can be entered as usual.
+    # DEFAULT configured logs will add to the main program directory under logs.
+    # The default path option is only available when using the log_director function from ictoolkit.
+    filename: DEFAULT
+    # Default 1000000 Bytes (1 Megabyte)
+    maxBytes: 1000000
+    backupCount: 3
+    encoding: utf8
+
+loggers:
+  __main__:
+    level: INFO
+    handlers: [console, dockerlogredirect_log_file]
+    propagate: no
+  log_redirect.log_redirect:
+    level: INFO
+    handlers: [console, dockerlogredirect_log_file]
+    propagate: no
+
+root:
+  level: INFO
+  handlers: [console]
+# #############################################################################################
+# #############################################################################################
