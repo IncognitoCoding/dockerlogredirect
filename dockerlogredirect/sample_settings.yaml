@@ -91,6 +91,10 @@ loggers:
     level: ERROR
     handlers: [console, dockerlogredirect_log_file]
     propagate: no
+  ictoolkit.directors.log_director:
+    level: ERROR
+    handlers: [console, dockerlogredirect_log_file]
+    propagate: no
     
 root:
   level: INFO

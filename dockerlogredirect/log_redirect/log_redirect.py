@@ -17,7 +17,7 @@ __author__ = 'IncognitoCoding'
 __copyright__ = 'Copyright 2021, log_redirect'
 __credits__ = ['IncognitoCoding']
 __license__ = 'GPL'
-__version__ = '0.10'
+__version__ = '0.11'
 __maintainer__ = 'IncognitoCoding'
 __status__ = 'Development'
 
@@ -56,7 +56,6 @@ def get_docker_log(container_name: str, container_logger: logging.Logger, exclud
     logger.debug(f'Starting to redirect the docker container logs for {container_name}')
     logger.debug(f'Setting the processing args that are sent as individual commands.\n  - Processing arguments = {processing_args}')
     logger.debug('If the docker container is not running, it will take a minute to timeout. Please wait...')
-
     try:
         # Runs the subprocess and returns the output from the docker log file and will continue to process new log entries.
         output = subprocess.Popen(processing_args, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, universal_newlines=True)
@@ -69,7 +68,7 @@ def get_docker_log(container_name: str, container_logger: logging.Logger, exclud
                 # Checks that the line does not contain an exclude entry.
                 if exclude not in line:
                     # Writes formated output to log file.
-                    container_logger.info(line)
+                    container_logger.debug(line)
             elif isinstance(exclude, list):
                 # Assigns list variable to temporary hold matched excludes determining if the line should write.
                 matched_exclude = []
@@ -83,10 +82,10 @@ def get_docker_log(container_name: str, container_logger: logging.Logger, exclud
                 # Checks that the list is empty, which means no match was found.
                 if not matched_exclude:
                     # Writes formated output to log file.
-                    container_logger.info(line)
+                    container_logger.debug(line)
             elif exclude is None:
                 # Writes formated output to log file.
-                container_logger.info(line)
+                container_logger.debug(line)
     except Exception as error:
         # This exception raise ValueError message has to be here in order to break out of the thread having issues. Additional error processing will continue in the calling function.
         error_message = (

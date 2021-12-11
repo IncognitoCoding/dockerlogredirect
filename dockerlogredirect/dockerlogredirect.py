@@ -24,7 +24,7 @@ __author__ = 'IncognitoCoding'
 __copyright__ = 'Copyright 2021, DockerLogRedirect'
 __credits__ = ['IncognitoCoding']
 __license__ = 'GPL'
-__version__ = '0.10'
+__version__ = '0.11'
 __maintainer__ = 'IncognitoCoding'
 __status__ = 'Development'
 
@@ -118,8 +118,8 @@ def create_docker_container_loggers(config_yaml_read: yaml, central_log_path: st
                 'logger_name': container_name,  # Sets the name of the logger.
                 'log_name': log_name,  # Set the name of the log file.
                 'max_bytes': max_log_file_size,  # Sets the max log file size.
-                'file_log_level': 'INFO',  # Sets the file log level.
-                'console_log_level': 'INFO',  # Sets the console log level.
+                'file_log_level': 'DEBUG',  # Sets the file log level. Use DEBUG to keep output from going to the console when using the create_logger function with the YAML logger import function (setup_logger_yaml).
+                'console_log_level': 'DEBUG',  # Sets the console log level. Use DEBUG to keep output from going to the console when using the create_logger function with the YAML logger import function (setup_logger_yaml).
                 'backup_count': 4,  # Sets backup copy count
                 'format_option': '%(message)s',  # Sets the log format based on a number option or manual.
                 'handler_option': 2,  # Sets handler option.
