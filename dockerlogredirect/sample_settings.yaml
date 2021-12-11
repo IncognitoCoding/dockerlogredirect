@@ -83,7 +83,15 @@ loggers:
     level: INFO
     handlers: [console, dockerlogredirect_log_file]
     propagate: no
-
+  ictoolkit.directors.thread_director:
+    level: ERROR
+    handlers: [console, dockerlogredirect_log_file]
+    propagate: no
+  ictoolkit.directors.email_director:
+    level: ERROR
+    handlers: [console, dockerlogredirect_log_file]
+    propagate: no
+    
 root:
   level: INFO
   handlers: [console]
