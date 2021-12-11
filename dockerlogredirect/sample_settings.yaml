@@ -12,12 +12,20 @@ docker_container:
     # Add the software container_name
     container_name: 'MySoftware1'
     log_name: 'sample1.log'
+    # Sets max log size in bytes
+    # Used for issue tracking and program log
+    # Default 1000000 Bytes (1 Megabyte)
+    max_log_file_size: 1000000
     # (Optional): Exclude line with keywords. List format for multiple entries.
     exclude: 'sample entry'
   docker_container2:
     # Add the software container_name
     container_name: 'MySoftware2'
     log_name: 'sample2.log'
+    # Sets max log size in bytes
+    # Used for issue tracking and program log
+    # Default 1000000 Bytes (1 Megabyte)
+    max_log_file_size: 1000000
     # (Optional): Exclude line with keywords. List format for multiple entries.
     exclude:
       - 'sample entry1'
