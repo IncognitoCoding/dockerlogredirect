@@ -25,7 +25,7 @@ Use the requirements.txt file to make sure you have all the required prerequisit
 ## How to Use:
 The sample YAML configuration file has plenty of notes to help explain the setup process. The steps below will explain what needs to be done to get the program running.
 
-    Step 1: For the program to recognize the YAML file, you must copy the sample_docker_log_redirect.yaml file and rename it to docker_log_redirect.yaml 
+    Step 1: For the program to recognize the YAML file, you must copy the sample_settings.yaml file and rename it to settings.yaml 
     Step 2: Update the YAML file with your configuration.
     Step 3: Run the program to make sure your settings are entered correctly. 
     Step 4: Depending on your operating system (Linux Ubuntu or Windows), you can set up the program to run automatically, which is recommended. Other Linux versions will work but are not explained below. 
