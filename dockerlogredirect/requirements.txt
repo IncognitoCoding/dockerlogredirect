@@ -2,7 +2,7 @@ astroid==2.9.0
 cffi==1.14.5
 colorama==0.4.4
 cryptography==3.4.6
-ictoolkit @ git+https://github.com/IncognitoCoding/ictoolkit.git@fcc7f68cd83b6aac44f24c7c267292c80ada463b
+ictoolkit @ git+https://github.com/IncognitoCoding/ictoolkit.git@899b91878714b582f9b7f483182280a62a7e65fa
 isort==5.10.1
 lazy-object-proxy==1.6.0
 mccabe==0.6.1

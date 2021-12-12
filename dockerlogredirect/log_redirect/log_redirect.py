@@ -17,7 +17,7 @@ __author__ = 'IncognitoCoding'
 __copyright__ = 'Copyright 2021, log_redirect'
 __credits__ = ['IncognitoCoding']
 __license__ = 'GPL'
-__version__ = '0.11'
+__version__ = '0.12'
 __maintainer__ = 'IncognitoCoding'
 __status__ = 'Development'
 
@@ -140,6 +140,7 @@ def create_docker_log_threads(docker_container_loggers: list) -> list:
 
         # Sets thread name
         thread_name = f'{container_name}_thread'
+        thread_start_errors = None
         logger.debug(f'The thread ({thread_name}) is being created for {container_name}')
         # Checks if the start_decryptor_site companion program program is not running for initial startup.
         if thread_name not in str(threading.enumerate()):
@@ -150,9 +151,9 @@ def create_docker_log_threads(docker_container_loggers: list) -> list:
                 # You have to use functools for this to work correctly. Adding the function without functools will cause the function to start before being passed to the start_function_thread.
                 start_function_thread(partial(get_docker_log, container_name, container_logger, exclude_entries), thread_name, False)
             except ValueError as error:
-                error_message = (f'{error}Additional traceback reverse path line: {error.__traceback__.tb_lineno} in <{__name__}>\n')
-                logger.debug(f'Forwarding caught ValueError at line {error.__traceback__.tb_lineno} in <{__name__}>')
-                raise ValueError(error_message)
+                # No traceback required for this value error. This error is used to set the tracker return info.
+                thread_start_errors = (f'{error}Additional traceback reverse path line: {error.__traceback__.tb_lineno} in <{__name__}>\n')
+                logger.debug(f'Caught ValueError at line {error.__traceback__.tb_lineno} in <{__name__}>')
             except Exception as error:
                 error_message = (
                     f'A general exception occurred when attempting to start the function thread.\n\n'
@@ -163,18 +164,20 @@ def create_docker_log_threads(docker_container_loggers: list) -> list:
                 )
                 logger.error(error_message)
                 raise ValueError(error_message)
-
-            # Validates the start_decryptor_site companion program started.
-            if thread_name in str(threading.enumerate()):
-                logger.info(f'The docker container log capture has started for {container_name}. Thread name = {thread_name}')
-                # Adds the thread status into tracker dictionary
-                thread_start_tracker.append([{'Status': 'Started', 'container_name': container_name}])
+            # Checks that no errors occurred.
+            if thread_start_errors is None:
+                if thread_name in str(threading.enumerate()):
+                    # Adds the thread status into tracker dictionary
+                    thread_start_tracker.append([{'status': 'started', 'thread_name': thread_name, 'container_name': container_name, 'thread_start_error': None}])
+                else:
+                    # Adds the thread status into tracker dictionary
+                    thread_start_tracker.append([{'status': 'failed', 'container_name': container_name, 'thread_start_error': None}])
             else:
-                logger.error(f'Failed to start {thread_name} for {container_name}. The program will continue, but additional troubleshooting will be required. The docker container may not be active.')
                 # Adds the thread status into tracker dictionary
-                thread_start_tracker.append([{'Status': 'Failed', 'container_name': container_name}])
+                thread_start_tracker.append([{'status': 'failed', 'thread_name': thread_name, 'container_name': container_name, 'thread_start_errors': thread_start_errors}])
         else:
-            logger.info(f'The thread ({thread_name}) is still running for {container_name}. No action required')
+            # Adds the thread status into tracker dictionary
+            thread_start_tracker.append([{'status': 'running', 'thread_name': thread_name, 'container_name': container_name, 'thread_start_error': None}])
 
     logger.debug(f'Returning value(s):\n  - Return = {thread_start_tracker}')
     return thread_start_tracker

@@ -24,7 +24,7 @@ __author__ = 'IncognitoCoding'
 __copyright__ = 'Copyright 2021, DockerLogRedirect'
 __credits__ = ['IncognitoCoding']
 __license__ = 'GPL'
-__version__ = '0.11'
+__version__ = '0.12'
 __maintainer__ = 'IncognitoCoding'
 __status__ = 'Development'
 
@@ -418,127 +418,161 @@ def main():
         # Sets count on total entries found
         total_thread_status_entries = len(thread_status)
         # Loops through each dictionary in the thread_status list.
-        for thread_status_of_dictionary in thread_status:
+        for index, thread_status_of_dictionary in enumerate(thread_status):
             # Loops through each item in the dictionary entry.
-            for index, value in enumerate(thread_status_of_dictionary):
-                # Sets the status value to a variable. This is done to decrease the code complexity.
-                status = value.get('Status')
-                # Sets the container name value to a variable. This is done to decrease the code complexity.
+            for value in thread_status_of_dictionary:
+                # Sets the return dictionary value to a variable.
+                status = value.get('status')
+                thread_name = value.get('thread_name')
                 container_name = value.get('container_name')
-                # Checks if email notifications are enabled
-                if email_alerts:
-                    logger.info(f'Sending email. Entry {index + 1} of {total_thread_status_entries }')
-                    # Calls function to send the email.
-                    send_email(email_settings, f'Docker Log Redirect - The event for {container_name} has a status of [{status}]', f'A docker redirect event has occurred. Status of the docker log redirect = {status}')
+                thread_start_errors = value.get('thread_start_errors')
+                # Checks the threads status to determine alerts or logger output.
+                if 'running' != status:
+                    # Checks if email notifications are enabled
+                    if email_alerts:
+                        logger.info(f'Sending email. Entry {index + 1} of {total_thread_status_entries }')
+                        # Calls function to send the email.
+                        send_email(email_settings, f'Docker Log Redirect - The event for {container_name} has a status of [{status}]', f'A docker redirect event has occurred. Status of the docker log redirect = {status}')
+                    else:
+                        logger.info('Email alerting is disabled. The found log event is not be sent')
+
+                    # Checks if the thread had errors while starting.
+                    if thread_start_errors is not None:
+                        logger.info('Errors occurred while starting one or more threads. Additional details are provided below.')
+
+                        try:
+                            # Checks if a thread start errors containing 'timeout has reached' was throw to create a specific email. Timeouts on the thread do not mean the program needs to stop because other threads may run.
+                            if 'timeout has reached' in str(thread_start_errors):
+                                email_subject = 'Docker Log Redirect - Docker Container Not Outputting'
+                                email_message = (f'The docker container logs for the thread \"{thread_name}\" have stopped outputting. This can happen with the docker container stops running. '
+                                                 'The docker container will be re-checked in 1 hour.')
+                                warning_message = (
+                                    f'Failed to start {thread_name} for {container_name}. The program will continue, but additional troubleshooting will be required. The docker container may not be active.\n'
+                                    + (('-' * 150) + '\n') + (('-' * 65) + 'Additional Information' + ('-' * 63) + '\n') + (('-' * 150) + '\n')
+                                    + 'This can happen with the docker container stops running. The docker container will be re-checked in 1 hour.\n\n'
+                                    'Suggested Resolution:\n'
+                                    f'  - Please verify your docker is currently running.\n\n'
+                                    f'Originating error on line {traceback.extract_stack()[-1].lineno} in <{__name__}>\n'
+                                    + (('-' * 150) + '\n') * 2
+                                )
+                                logger.warning(warning_message)
+                            # Checks if the user entered an incorrect program entry.
+                            elif 'The system cannot find the file specified' in str(thread_start_errors):
+                                # Pulls the subprocess entry name using regex. The .* is used to match any character between ().
+                                # Err Example: 2021-04-02 12:33:16|Error|The sub-process (['docker', 'logs', '-f', 'MySoftware1']) failed to run. [WinError 2] The system cannot find the file specified,
+                                #              Originating error on line 57 in <__main__>, Error on line 126 in <ictoolkit.directors.thread_director>, Error on line 149 in <__main__> (Module:docker_log_redirect, Function:main,  Line:525)
+                                # Result: 'docker', 'logs', '-f', 'MySoftware1'
+                                result = re.search(r"\(.*\)", str(thread_start_errors))
+                                # Sets the matching result.
+                                subprocess_command = result.group(0)
+                                email_subject = 'Docker Log Redirect - Docker Redirect Command Failed To Run'
+                                email_message = ('The system cannot find the file specified while attempting to run the following '
+                                                 f'sub-process {subprocess_command}. Please ensure your host running this program has Docker installed, and the running user has permission to the '
+                                                 'docker socket. The docker container will be re-checked in 1 hour.')
+                                warning_message = (
+                                    f'Failed to start {thread_name} for {container_name}. The program will continue, but additional troubleshooting will be required. The docker container may not be active.\n'
+                                    + (('-' * 150) + '\n') + (('-' * 65) + 'Additional Information' + ('-' * 63) + '\n') + (('-' * 150) + '\n')
+                                    + 'This can happen when the docker is not installed or has permission issues with the docker socket.\n\n'
+                                    'Suggested Resolution:\n'
+                                    f'  - Please ensure your host running this program has Docker installed, and the running user has permission to the docker socket. The docker container will be re-checked in 1 hour.\n\n'
+                                    f'Originating error on line {traceback.extract_stack()[-1].lineno} in <{__name__}>\n'
+                                    + (('-' * 150) + '\n') * 2
+                                )
+                                logger.warning(warning_message)
+                            # Checks if the user entered a subprocess that didn't get flagged by an incorrect program entry.
+                            elif 'The sub-process' in str(thread_start_errors):
+                                # Pulls the subprocess entry name using regex. The .* is used to match any character between ().
+                                # Err Example: 2021-04-02 12:33:16|Error|The sub-process (['docker', 'logs', '-f', 'MySoftware1']) failed to run, Originating error on line 57 in <__main__>,
+                                #              Error on line 126 in <ictoolkit.directors.thread_director>, Error on line 149 in <__main__> (Module:docker_log_redirect, Function:main,  Line:525)
+                                # Result: 'docker', 'logs', '-f', 'MySoftware1'
+                                result = re.search(r"\(.*\)", str(thread_start_errors))
+                                # Sets the matching result.
+                                subprocess_command = result.group(0)
+                                email_subject = 'Docker Log Redirect - Docker Redirect Command Failed To Run'
+                                email_message = (f'The system countered the following error ({thread_start_errors}) while running the following sub-process '
+                                                 f'{subprocess_command}. Please ensure your host running this program has Docker installed, and the running user has permission to the docker socket. The docker '
+                                                 'container will be re-checked in 1 hour.')
+                                warning_message = (
+                                    f'Failed to start {thread_name} for {container_name}. The program will continue, but additional troubleshooting will be required. The docker container may not be active.\n'
+                                    + (('-' * 150) + '\n') + (('-' * 65) + 'Additional Information' + ('-' * 63) + '\n') + (('-' * 150) + '\n')
+                                    + 'This can happen when the docker is not installed or has permission issues with the docker socket.\n\n'
+                                    'Suggested Resolution:\n'
+                                    f'  - Please ensure your host running this program has Docker installed, and the running user has permission to the docker socket. The docker container will be re-checked in 1 hour.\n\n'
+                                    f'Originating error on line {traceback.extract_stack()[-1].lineno} in <{__name__}>\n'
+                                    + (('-' * 150) + '\n') * 2
+                                )
+                                logger.warning(warning_message)
+                            else:
+                                email_subject = 'Docker Log Redirect - Program Issue Occurred'
+                                email_message = f'{datetime.now().strftime("%Y-%m-%d %H:%M:%S")}|Warning|Exception Thrown|{thread_start_errors}'
+                                warning_message = (
+                                    f'Exception warning.\n\n'
+                                    + (('-' * 150) + '\n') + (('-' * 65) + 'Additional Information' + ('-' * 63) + '\n') + (('-' * 150) + '\n')
+                                    + f'{thread_start_errors}\n\n'
+                                    f'Originating error on line {traceback.extract_stack()[-1].lineno} in <{__name__}>\n'
+                                    + (('-' * 150) + '\n') * 2
+                                )
+                                logger.warning(warning_message)
+                        except ValueError as error:
+                            error_message = (f'{error}Additional traceback reverse path line: {error.__traceback__.tb_lineno} in <{__name__}>\n')
+                            logger.debug(f'Forwarding caught ValueError at line {error.__traceback__.tb_lineno} in <{__name__}>')
+                            raise ValueError(error_message)
+                        except Exception as error:
+                            error_message = (
+                                f'A general exception occurred when attempting to send an email.\n\n'
+                                + (('-' * 150) + '\n') + (('-' * 65) + 'Additional Information' + ('-' * 63) + '\n') + (('-' * 150) + '\n')
+                                + f'{error}\n\n'
+                                f'Originating error on line {error.__traceback__.tb_lineno} in <{__name__}>\n'
+                                + (('-' * 150) + '\n') * 2
+                            )
+                            logger.error(error_message)
+                            raise ValueError(error_message)
+
+                        # ##########################################################
+                        # Currently the program is exiting on any discovered error.
+                        # ##########################################################
+                        # Checking if the user chooses not to send program errors to email.
+                        if alert_program_errors is True and email_alerts is True:
+                            logger.debug('Sending email notification')
+                            # Calls function to send the email.
+                            send_email(email_settings, email_subject, email_message)
+                        else:
+                            if alert_program_errors is False:
+                                logger.debug(f'The user chooses not to send program errors to email alerts. Outputting error to the log file.')
+                            else:
+                                logger.debug('The user did not choose an option on sending program errors to email. Outputting error to the log file.')
+                elif 'started' == status:
+                    logger.info(f'The docker container log capture has started for {container_name}. Thread name = {thread_name}')
+                elif 'running' == status:
+                    logger.info(f'The thread ({thread_name}) is still running for {container_name}. No action required')
                 else:
-                    logger.info('Email alerting is disabled. The found log event is not be sent')
+                    error_message = (
+                        f'An unknown thread status had returned.\n\n'
+                        + (('-' * 150) + '\n') + (('-' * 65) + 'Additional Information' + ('-' * 63) + '\n') + (('-' * 150) + '\n')
+                        + 'Expected Result:\n'
+                        '  - status = running, started, failed\n\n'
+                        'Suggested Resolution:\n'
+                        f'  - Report this error to the developer.\n\n'
+                        f'Originating error on line {traceback.extract_stack()[-1].lineno} in <{__name__}>\n'
+                        + (('-' * 150) + '\n') * 2
+                    )
+                    logger.error(error_message)
+                    print('Exiting...')
+                    exit()
     except ValueError as error:
-
-        try:
-            # Checks if a thread exception error containing 'timeout has reached' was throw to create a specific email. Timeouts on the thread do not mean the program needs to stop because other threads may run.
-            if 'timeout has reached' in str(error):
-                # Pulls the thread name using regex. The A-Za-z0-9_ is used to match contiguous letters, numbers, or underscores.
-                # Err Example: 2021-04-01 09:39:39|Error|Exception Thrown|Thread (transmission_thread) timeout has reached its threshold of 1 minute. Manual intervention is required for this thread to start,
-                #              Error on line 133 in , Error on line 150 in <__main__>
-                # Result: transmission_thread
-                result = re.search(r"\(([A-Za-z0-9_]+)\)", str(error))
-                # Sets the matching result.
-                thread_name = result.group(1)
-                email_subject = 'Docker Log Redirect - Docker Container Not Outputting'
-                email_message = (f'The docker container logs for the thread \"{thread_name}\" have stopped outputting. This can happen with the docker container stops running. '
-                                 'The docker container will be re-checked in 1 hour.')
-                warning_message = (
-                    + (('-' * 150) + '\n') + (('-' * 70) + 'More Details' + ('-' * 68) + '\n') + (('-' * 150) + '\n')
-                    + 'This can happen with the docker container stops running. The docker container will be re-checked in 1 hour.\n\n'
-                    'Suggested Resolution:\n'
-                    f'  - Please verify your docker is currently running.\n\n'
-                    f'Originating error on line {error.__traceback__.tb_lineno} in <{__name__}>\n'
-                    + (('-' * 150) + '\n') * 2
-                )
-                logger.warning(warning_message)
-            # Checks if the user entered an incorrect program entry.
-            elif 'The system cannot find the file specified' in str(error):
-                # Pulls the subprocess entry name using regex. The .* is used to match any character between ().
-                # Err Example: 2021-04-02 12:33:16|Error|The sub-process (['docker', 'logs', '-f', 'MySoftware1']) failed to run. [WinError 2] The system cannot find the file specified,
-                #              Originating error on line 57 in <__main__>, Error on line 126 in <ictoolkit.directors.thread_director>, Error on line 149 in <__main__> (Module:docker_log_redirect, Function:main,  Line:525)
-                # Result: 'docker', 'logs', '-f', 'MySoftware1'
-                result = re.search(r"\(.*\)", str(error))
-                # Sets the matching result.
-                subprocess_command = result.group(0)
-                email_subject = 'Docker Log Redirect - Docker Redirect Command Failed To Run'
-                email_message = ('The system cannot find the file specified while attempting to run the following '
-                                 f'sub-process {subprocess_command}. Please ensure your host running this program has Docker installed, and the running user has permission to the '
-                                 'docker socket. The docker container will be re-checked in 1 hour.')
-                warning_message = (
-                    (('-' * 150) + '\n') + (('-' * 70) + 'More Details' + ('-' * 68) + '\n') + (('-' * 150) + '\n')
-                    + 'This can happen when the docker is not installed or has permission issues with the docker socket.\n\n'
-                    'Suggested Resolution:\n'
-                    f'  - Please ensure your host running this program has Docker installed, and the running user has permission to the docker socket. The docker container will be re-checked in 1 hour.\n\n'
-                    f'Originating error on line {error.__traceback__.tb_lineno} in <{__name__}>\n'
-                    + (('-' * 150) + '\n') * 2
-                )
-                logger.warning(warning_message)
-            # Checks if the user entered a subprocess that didn't get flagged by an incorrect program entry.
-            elif 'The sub-process' in str(error):
-                # Pulls the subprocess entry name using regex. The .* is used to match any character between ().
-                # Err Example: 2021-04-02 12:33:16|Error|The sub-process (['docker', 'logs', '-f', 'MySoftware1']) failed to run, Originating error on line 57 in <__main__>,
-                #              Error on line 126 in <ictoolkit.directors.thread_director>, Error on line 149 in <__main__> (Module:docker_log_redirect, Function:main,  Line:525)
-                # Result: 'docker', 'logs', '-f', 'MySoftware1'
-                result = re.search(r"\(.*\)", str(error))
-                # Sets the matching result.
-                subprocess_command = result.group(0)
-                email_subject = 'Docker Log Redirect - Docker Redirect Command Failed To Run'
-                email_message = (f'The system countered the following error ({error}) while running the following sub-process '
-                                 f'{subprocess_command}. Please ensure your host running this program has Docker installed, and the running user has permission to the docker socket. The docker '
-                                 'container will be re-checked in 1 hour.')
-                warning_message = (
-                    (('-' * 150) + '\n') + (('-' * 70) + 'More Details' + ('-' * 68) + '\n') + (('-' * 150) + '\n')
-                    + 'This can happen when the docker is not installed or has permission issues with the docker socket.\n\n'
-                    'Suggested Resolution:\n'
-                    f'  - Please ensure your host running this program has Docker installed, and the running user has permission to the docker socket. The docker container will be re-checked in 1 hour.\n\n'
-                    f'Originating error on line {error.__traceback__.tb_lineno} in <{__name__}>\n'
-                    + (('-' * 150) + '\n') * 2
-                )
-                logger.warning(warning_message)
-            else:
-                email_subject = 'Docker Log Redirect - Program Issue Occurred'
-                email_message = f'{datetime.now().strftime("%Y-%m-%d %H:%M:%S")}|Warning|Exception Thrown|{error}'
-                warning_message = (
-                    f'Exception warning.\n\n'
-                    + (('-' * 150) + '\n') + (('-' * 65) + 'Additional Information' + ('-' * 63) + '\n') + (('-' * 150) + '\n')
-                    + f'{error}\n\n'
-                    f'Originating error on line {error.__traceback__.tb_lineno} in <{__name__}>\n'
-                    + (('-' * 150) + '\n') * 2
-                )
-                logger.warning(warning_message)
-        except ValueError as error:
-            error_message = (f'{error}Additional traceback reverse path line: {error.__traceback__.tb_lineno} in <{__name__}>\n')
-            logger.debug(f'Forwarding caught ValueError at line {error.__traceback__.tb_lineno} in <{__name__}>')
-            raise ValueError(error_message)
-        except Exception as error:
-            error_message = (
-                f'A general exception occurred when attempting to send an email.\n\n'
-                + (('-' * 150) + '\n') + (('-' * 65) + 'Additional Information' + ('-' * 63) + '\n') + (('-' * 150) + '\n')
-                + f'{error}\n\n'
-                f'Originating error on line {error.__traceback__.tb_lineno} in <{__name__}>\n'
-                + (('-' * 150) + '\n') * 2
-            )
-            logger.error(error_message)
-            raise ValueError(error_message)
-
-        # ##########################################################
-        # Currently the program is exiting on any discovered error.
-        # ##########################################################
-        # Checking if the user chooses not to send program errors to email.
-        if alert_program_errors is True and email_alerts is True:
-            logger.debug('Sending email notification')
-            # Calls function to send the email.
-            send_email(email_settings, email_subject, email_message)
-        else:
-            if alert_program_errors is False:
-                logger.debug(f'The user chooses not to send program errors to email alerts. Outputting error to the log file.')
-            else:
-                logger.debug('The user did not choose an option on sending program errors to email. Outputting error to the log file.')
+        error_message = (f'{error}Additional traceback reverse path line: {error.__traceback__.tb_lineno} in <{__name__}>\n')
+        logger.debug(f'Forwarding caught ValueError at line {error.__traceback__.tb_lineno} in <{__name__}>')
+        raise ValueError(error_message)
+    except Exception as error:
+        error_message = (
+            f'A general exception occurred when creating the docker log threads.\n\n'
+            + (('-' * 150) + '\n') + (('-' * 65) + 'Additional Information' + ('-' * 63) + '\n') + (('-' * 150) + '\n')
+            + f'{error}\n\n'
+            f'Originating error on line {error.__traceback__.tb_lineno} in <{__name__}>\n'
+            + (('-' * 150) + '\n') * 2
+        )
+        logger.error(error_message)
+        raise ValueError(error_message)
 
     logger.info('The main program will sleep for 1 hour and validate the docker log redirect threads are still running.')
 
