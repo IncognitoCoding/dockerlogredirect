@@ -330,8 +330,27 @@ def main():
 
     # Sets the YAML file configuration location.
     yaml_file_path = os.path.abspath(f'{main_script_path}/settings.yaml')
-    # Calls function to setup the logging configuration with the YAML file.
-    setup_logger_yaml(yaml_file_path)
+
+    try:
+
+        # Calls function to setup the logging configuration with the YAML file.
+        setup_logger_yaml(yaml_file_path)
+    except ValueError as error:
+        error_message = (f'{error}Additional traceback reverse path line: {error.__traceback__.tb_lineno} in <{__name__}>\n')
+        print(error_message)
+        print('Exiting...')
+        exit()
+    except Exception as error:
+        error_message = (
+            f'An error occurred while setting up the logger yaml.\n\n'
+            + (('-' * 150) + '\n') + (('-' * 65) + 'Additional Information' + ('-' * 63) + '\n') + (('-' * 150) + '\n')
+            + f'{error}\n\n'
+            f'Originating error on line {error.__traceback__.tb_lineno} in <{__name__}>\n'
+            + (('-' * 150) + '\n') * 2
+        )
+        print(error_message)
+        print('Exiting...')
+        exit()
 
     logger = logging.getLogger(__name__)
     logger.debug(f'=' * 20 + traceback.extract_stack(None, 2)[1][2] + '=' * 20)
