@@ -22,7 +22,7 @@ __author__ = 'IncognitoCoding'
 __copyright__ = 'Copyright 2021, log_redirect'
 __credits__ = ['IncognitoCoding']
 __license__ = 'GPL'
-__version__ = '0.13'
+__version__ = '0.14'
 __maintainer__ = 'IncognitoCoding'
 __status__ = 'Development'
 
@@ -47,6 +47,7 @@ def get_docker_log(container_name: str, container_logger: logging.Logger, exclud
     logger_flowchart = logging.getLogger('flowchart')
     logger_flowchart.debug(f'Flowchart --> Function: {get_function_name()}')
 
+    # Checks function launch variables and logs passing parameters.
     try:
         # Validates required types.
         value_type_validation(container_name, str, __name__, get_line_number())
@@ -63,7 +64,19 @@ def get_docker_log(container_name: str, container_logger: logging.Logger, exclud
             f'  - container_logger (logger):\n        - {container_logger}\n'
             f'{formatted_exclude}\n'
         )
+    except Exception as error:
+        if 'Originating error on line' in str(error):
+            logger.debug(f'Forwarding caught {type(error).__name__} at line {error.__traceback__.tb_lineno} in <{__name__}>')
+            raise error
+        else:
+            error_args = {
+                'main_message': 'A general exception occurred during the value type validation.',
+                'error_type': Exception,
+                'original_error': error,
+            }
+            error_formatter(error_args, __name__, error.__traceback__.tb_lineno)
 
+    try:
         # Sets processing args that are sent as individual commands.
         # For example: dockeruser@mediadocker1:~$ docker logs transmission
         processing_args = ['docker', 'logs', '-f', container_name]
@@ -132,6 +145,7 @@ def create_docker_log_threads(docker_container_loggers: list) -> list:
     logger = logging.getLogger(__name__)
     logger.debug(f'=' * 20 + get_function_name() + '=' * 20)
 
+    # Checks function launch variables and logs passing parameters.
     try:
         # Validates required types.
         value_type_validation(docker_container_loggers, list, __name__, get_line_number())
@@ -146,7 +160,19 @@ def create_docker_log_threads(docker_container_loggers: list) -> list:
             'Passing parameters:\n'
             f'{formatted_docker_container_loggers}\n'
         )
+    except Exception as error:
+        if 'Originating error on line' in str(error):
+            logger.debug(f'Forwarding caught {type(error).__name__} at line {error.__traceback__.tb_lineno} in <{__name__}>')
+            raise error
+        else:
+            error_args = {
+                'main_message': 'A general exception occurred during the value type validation.',
+                'error_type': Exception,
+                'original_error': error,
+            }
+            error_formatter(error_args, __name__, error.__traceback__.tb_lineno)
 
+    try:
         logger.debug('Creating individual threads for each docker container')
         # Holds tread start information
         thread_start_tracker = []

@@ -25,7 +25,7 @@ __author__ = 'IncognitoCoding'
 __copyright__ = 'Copyright 2021, DockerLogRedirect'
 __credits__ = ['IncognitoCoding']
 __license__ = 'GPL'
-__version__ = '0.13'
+__version__ = '0.14'
 __maintainer__ = 'IncognitoCoding'
 __status__ = 'Development'
 
@@ -56,6 +56,7 @@ def create_docker_container_loggers(config_yaml_read: yaml, central_log_path: st
     logger = logging.getLogger(__name__)
     logger.debug(f'=' * 20 + get_function_name() + '=' * 20)
 
+    # Checks function launch variables and logs passing parameters.
     try:
         # Validates required types.
         value_type_validation(central_log_path, str, __name__, get_line_number())
@@ -69,7 +70,19 @@ def create_docker_container_loggers(config_yaml_read: yaml, central_log_path: st
             f'  - config_yaml_read (yaml):\n        - {config_yaml_read}\n'
             f'  - central_log_path (str):\n        - {central_log_path}\n'
         )
+    except Exception as error:
+        if 'Originating error on line' in str(error):
+            logger.debug(f'Forwarding caught {type(error).__name__} at line {error.__traceback__.tb_lineno} in <{__name__}>')
+            raise error
+        else:
+            error_args = {
+                'main_message': 'A general exception occurred during the value type validation.',
+                'error_type': Exception,
+                'original_error': error,
+            }
+            error_formatter(error_args, __name__, error.__traceback__.tb_lineno)
 
+    try:
         # Assigns the docker container name and docker container logger to create a multidimensional list.
         # Placement Example: ['MySoftware1', '<Logger MySoftware2 (Debug)>'']
         docker_container_loggers = []
