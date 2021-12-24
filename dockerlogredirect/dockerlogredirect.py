@@ -55,16 +55,16 @@ def create_docker_container_loggers(config_yaml_read: yaml, central_log_path: st
     """
     logger = logging.getLogger(__name__)
     logger.debug(f'=' * 20 + get_function_name() + '=' * 20)
+    # Custom flowchart tracking. This is ideal for large projects that move a lot.
+    # For any third-party modules, set the flow before making the function call.
+    logger_flowchart = logging.getLogger('flowchart')
+    logger_flowchart.debug(f'Flowchart --> Function: {get_function_name()}')
 
     # Checks function launch variables and logs passing parameters.
     try:
         # Validates required types.
         value_type_validation(central_log_path, str, __name__, get_line_number())
 
-        # Custom flowchart tracking. This is ideal for large projects that move a lot.
-        # For any third-party modules, set the flow before making the function call.
-        logger_flowchart = logging.getLogger('flowchart')
-        logger_flowchart.debug(f'Flowchart --> Function: {get_function_name()}')
         logger.debug(
             'Passing parameters:\n'
             f'  - config_yaml_read (yaml):\n        - {config_yaml_read}\n'

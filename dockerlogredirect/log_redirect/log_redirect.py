@@ -144,16 +144,16 @@ def create_docker_log_threads(docker_container_loggers: list) -> list:
     """
     logger = logging.getLogger(__name__)
     logger.debug(f'=' * 20 + get_function_name() + '=' * 20)
+    # Custom flowchart tracking. This is ideal for large projects that move a lot.
+    # For any third-party modules, set the flow before making the function call.
+    logger_flowchart = logging.getLogger('flowchart')
+    logger_flowchart.debug(f'Flowchart --> Function: {get_function_name()}')
 
     # Checks function launch variables and logs passing parameters.
     try:
         # Validates required types.
         value_type_validation(docker_container_loggers, list, __name__, get_line_number())
 
-        # Custom flowchart tracking. This is ideal for large projects that move a lot.
-        # For any third-party modules, set the flow before making the function call.
-        logger_flowchart = logging.getLogger('flowchart')
-        logger_flowchart.debug(f'Flowchart --> Function: {get_function_name()}')
         # Requires pre-logger formatting because the logger can not use one line if/else or join without excluding sections of the the output.
         formatted_docker_container_loggers = '  - docker_container_loggers (list):' + str('\n        - ' + '\n        - '.join(map(str, docker_container_loggers)))
         logger.debug(
