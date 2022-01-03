@@ -25,9 +25,9 @@ __author__ = 'IncognitoCoding'
 __copyright__ = 'Copyright 2021, DockerLogRedirect'
 __credits__ = ['IncognitoCoding']
 __license__ = 'GPL'
-__version__ = '0.15'
+__version__ = '1.0'
 __maintainer__ = 'IncognitoCoding'
-__status__ = 'Development'
+__status__ = 'Production'
 
 
 def create_docker_container_loggers(config_yaml_read: yaml, central_log_path: str) -> list:

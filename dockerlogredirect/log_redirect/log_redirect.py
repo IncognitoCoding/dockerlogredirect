@@ -22,9 +22,9 @@ __author__ = 'IncognitoCoding'
 __copyright__ = 'Copyright 2021, log_redirect'
 __credits__ = ['IncognitoCoding']
 __license__ = 'GPL'
-__version__ = '0.14'
+__version__ = '1.0'
 __maintainer__ = 'IncognitoCoding'
-__status__ = 'Development'
+__status__ = 'Production'
 
 
 def get_docker_log(container_name: str, container_logger: logging.Logger, exclude: Union[str, list]) -> None:
