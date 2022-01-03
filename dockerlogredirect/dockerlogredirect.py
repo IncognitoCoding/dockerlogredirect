@@ -547,21 +547,43 @@ def main():
         cleaned_error = str(error).replace(r'\n', '\n')[1:-1]
         logger.debug(f'Captured caught {type(error).__name__} at line {error.__traceback__.tb_lineno} in <{__name__}>')
         logger.error(cleaned_error)
+        # Calls function to send the email.
+        send_email(email_settings, f'Docker Log Redirect - Exiting Program Error Occurred', str(cleaned_error))
         print('Exiting...')
         exit()
     except Exception as error:
-        if 'Originating error on line' in str(error):
+        if 'Failed to reach the SMTP server' in str(error):
+            logger.warning('Failed to reach the SMTP server. Another attempt will occur on the next log check.')
+        # This error is unique to the Mailrise SMTP relay.
+        elif 'recipient does not exist in configuration file' in str(error):
+            # Seeking Line Example: {'email@mysite.com': (551, b'recipient does not exist in configuration file')}
+            recipient_error = [recipient for recipient in str(error).split('\n') if 'recipient does not exist in' in recipient][0]
+            # Example Original: {'email@mysite.com': (551, b'recipient does not exist in configuration file')}
+            # Example Return: email@mysite.com
+            recipient = recipient_error.replace('{', '').replace('}', '').split(':')[0].replace('\'', '').strip()
+            logger.warning(f'The recipient \'{recipient}\' does not exist in the SMTP relay configuration file. The relay may be starting, or the recipient address is incorrect. Another attempt will occur on the next log check.')
+        elif 'Originating error on line' in str(error):
             logger.debug(f'Captured caught {type(error).__name__} at line {error.__traceback__.tb_lineno} in <{__name__}>')
             logger.error(error)
+            if alert_program_errors is True and email_alerts is True:
+                send_email(email_settings, f'Docker Log Redirect - Exiting Program Error Occurred', str(error))
             print('Exiting...')
             exit()
         else:
-            error_args = {
-                'main_message': 'A general exception occurred when creating the docker log threads.',
-                'error_type': Exception,
-                'original_error': error,
-            }
-            error_formatter(error_args, __name__, error.__traceback__.tb_lineno)
+
+            try:
+                error_args = {
+                    'main_message': 'A general exception occurred when creating the docker log threads.',
+                    'error_type': Exception,
+                    'original_error': error,
+                }
+                error_formatter(error_args, __name__, error.__traceback__.tb_lineno)
+            except Exception as error:
+                if alert_program_errors is True and email_alerts is True:
+                    send_email(email_settings, f'Docker Log Redirect - Exiting Program Error Occurred', str(error))
+                logger.error(error)
+                print('Exiting...')
+                exit()
 
     logger.info('The main program will sleep for 1 hour and validate the docker log redirect threads are still running.')
 
@@ -583,21 +605,7 @@ if __name__ == "__main__":
     # Loops to keep the main program active.
     # The YAML configuration file will contain a sleep setting within the main function.
     while True:
-
-        try:
-            # Calls main function.
-            main()
-
-            # 1-hour delay sleep. Each hour the program will check that the threads are still running and the docker container logs are redirecting.
-            time.sleep(3600)
-        except KeyError as error:
-            # KeyError output does not process the escape sequence cleanly. This fixes the output and removes the string double quotes.
-            cleaned_error = str(error).replace(r'\n', '\n')[1:-1]
-            print(cleaned_error)
-            print('Exiting...')
-            exit()
-        except Exception as error:
-            if 'Originating error on line' in str(error):
-                print(error)
-                print('Exiting...')
-                exit()
+        # Calls main function.
+        main()
+        # 1-hour delay sleep. Each hour the program will check that the threads are still running and the docker container logs are redirecting.
+        time.sleep(3600)
