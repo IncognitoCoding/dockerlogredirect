@@ -25,7 +25,7 @@ __author__ = 'IncognitoCoding'
 __copyright__ = 'Copyright 2021, DockerLogRedirect'
 __credits__ = ['IncognitoCoding']
 __license__ = 'GPL'
-__version__ = '0.14'
+__version__ = '0.15'
 __maintainer__ = 'IncognitoCoding'
 __status__ = 'Development'
 
